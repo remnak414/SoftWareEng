@@ -1,0 +1,201 @@
+Contents
+Key Security Features
+Scope of WCF Security
+Bindings and Behaviors
+Transfer Security
+Transport Security
+Message Security
+Authentication
+Authorization in WCF
+Impersonation / Delegation
+Auditing
+Objectives
+Understand basic security-related concepts in WCF.
+Understand what bindings and behaviors are and how they are used in WCF.
+Understand the differences between transport security and message security.
+Understand authorization and roles in the context of WCF.
+Understand impersonation and delegation in the context of WCF.
+Understand, at a high level, what auditing is and what options are available for auditing in WCF.
+Overview
+Securing your WCF service requires knowledge of the WCF security features related to auditing and logging, authentication, authorization, confidentiality, and integrity. Use behaviors and bindings to configure security for your WCF service. Bindings and behaviors allow you to configure transfer security, authentication, authorization, impersonation, and delegation as well as auditing and logging. Transfer security is the means by which WCF secures messages over the network. WCF gives you two options to implement transfer security: transport security and message security. Transport security secures the entire communication channel (e.g., by using SSL), while message security secures each message individually. WCF supports a variety of authentication options including username, Windows, and certificate authentication. Depending on your authentication method, you can choose to authorize your users by using role-based security or resource-based security. Use WCF impersonation and delegation to flow the identity and security context of your client-side original caller to the back end in order to support a granular authorization approach.
+Key Security Features
+Any Service-Oriented Architecture (SOA) needs to support security features that provide auditing, authentication, authorization, confidentiality, and integrity for the messages exchanged between the client and the service. Microsoft Windows Communication Foundation (WCF) provides these security features by default for any application that is built on top of the WCF framework.
+Key security features include:
+Auditing. Effective auditing and logging is the key to non-repudiation. Non-repudiation guarantees that a user cannot deny performing an operation or initiating a transaction.
+Authentication. Authentication allows you to confidently identify the clients of your service. These might be end users, other services, processes, or computers. WCF supports mutual authentication, which identifies both the client and the service in tandem, to help in preventing man-in-the-middle attacks.
+Authorization. Authorization determines what system resources and operations can be accessed by the authenticated user. This allows you to grant specific application and resource permissions for authenticated users.
+Confidentiality. Confidentiality, also referred to as privacy, is the process of making sure that data remains private and confidential, and that it cannot be viewed by unauthorized users. Encryption is frequently used to enforce confidentiality. Privacy is a key concern, particularly for data/messages passed across networks.
+Integrity. Integrity is the guarantee that data is protected from accidental or deliberate modification. Like privacy, integrity is a key concern, particularly for data/messages passed across networks. Integrity for data in transit is typically provided by using hashing techniques and message authentication codes.
+Scope of WCF Security
+The above fundamental security features are covered in the following WCF features:
+Transfer security. Responsible for providing message confidentiality, data integrity, and authentication of communicating parties.
+Authorization. Responsible for providing a framework for making authorization decisions.
+Auditing. Responsible for logging security-related events to the audit log.
+WCF provides access to these features through bindings and behavior configuration.
+Bindings and Behaviors
+When you create an overall security policy–for example, transfer security with authentication and authorization for your services–you can use bindings and behaviors to configure the required settings.
+Bindings and behaviors are described as follows:
+Bindings. Bindings control the security mode, client credential type, and other security settings.
+Behaviors. Service behaviors control impersonation levels, how client credentials are authenticated and authorized, and service credentials.
+You can configure bindings and behaviors, or you can program against the object model. Your binding selection determines the available security options for WCF. The following table summarizes the most commonly used bindings in WCF.
+Binding
+Common scenarios
+Default security settings
+basicHttpBinding
+Legacy Web service protocols
+No security
+netTcpBinding
+Binary TCP communication between machines
+Transport security with Windows authentication
+wsFederationHttpBinding
+Federated security scenarios
+Message security with issue token authentication
+wsHttpBinding
+Leveraging security standards (WS-Security)
+Message security with Windows authentication
+
+By default, every WCF binding will provide transfer security and user authentication except for basicHttpBinding. If necessary, you can change the security settings to suit your scenario requirements.
+Transfer Security
+After selecting a binding, you can decide which type of transfer security, otherwise known as security mode, to use for your WCF service. You can provide security on the transport level or the message level. Each option has its own advantages and disadvantages. For instance, transport security secures the entire communication channel (e.g., by using SSL) and therefore only supports point-to-point communication over a single transport. Message security protects each message individually and therefore supports multipoint communication, multiple transports, or even partial message encryption if necessary. Most scenarios are best supported by using transport security. The following security modes are available across the standard bindings.
+Mode
+Description
+None
+No security is provided; all information is passed in clear text.
+Transport
+Mutual authentication and message protection are provided at the transport level.
+Message
+Mutual authentication and message protection are provided at the message level.
+Both
+Mutual authentication and message protection are provided at both the transport and message levels. This is far more than is necessary for most scenarios.
+TransportWithMessageCredential
+Client authentication is provided at the message level, and message protection and service authentication are provided at the transport level.
+TransportCredentialOnly
+Mutual authentication is provided at the transport level; no message protection is provided. This option is available only on basicHttpBinding.
+
+Transport Security
+When using transport security, the user credentials and claims are passed using the transport layer. In other words, user credentials are transport-dependent, which allows fewer authentication options compared to message security. Each transport protocol (TCP, IPC, MSMQ, or HTTP) has its own mechanism for passing credentials and handling message protection. The most common approach for this is to use Secure Sockets Layer (SSL) for encrypting and signing the contents of the packets sent over Secure HTTP (HTTPS).
+Transport security is used to provide point-to-point security between the two endpoints (service and client). If there are intermediary systems between the client and the service, each intermediate point must forward the message over a new SSL connection.
+
+
+Figure 1 
+Transport Security
+Use transport security for the following scenarios:
+You are sending a message directly from your application to a WCF service and the message will not be routed through intermediate systems.
+You have both the service and the client in an intranet.
+Using transport security has the following advantages:
+It provides interoperability, meaning that communicating parties do not need to understand the WS-Security specification.
+It may result in better performance.
+Hardware accelerators can be used to further improve performance.
+Using transport security has the following disadvantages:
+Because security is applied on a point-to-point basis, there is no provision for multiple hops or routing through intermediate application nodes.
+It supports a limited set of credentials and claims compared to message security.
+It is transport-dependent upon the underlying platform, transport mechanism, and security service provider such as NTLM or Kerberos.
+Message Security
+When using message security, the user credentials and claims are encapsulated in every message using the WS-Security specification to secure messages. This option gives the most flexibility from an authentication perspective. You can use any type of security credentials you want, largely independent of transport, as long as both the client and the service agree.
+
+Figure 2 
+Message Security
+Use message security for the following scenarios:
+You are sending a message to a WCF service, and the message is likely to be forwarded to other WCF services or may be routed through intermediate systems.
+Your WCF clients are accessing the WCF service over the Internet, it is possible that other intermediate systems may be used in between, and security is your top consideration.
+Using message security has following advantages:
+It provides end-to-end security. Because message security directly encrypts and signs the message, having intermediaries does not break the security.
+It allows partial or selective message encryption and signing, thus improving overall application performance.
+Message security is transport-independent and can be used with any transport protocol.
+It supports a wide set of credentials and claims, including issue token, which enables federated security.
+Using message security has following disadvantages:
+This option may reduce performance compared to transport security because each individual message is encrypted and signed.
+It does not support interoperability with older ASP.NET Web Services (ASMX) clients because it requires both the client and service to support WS-Security specifications.
+Protection Levels
+The following table shows the various protection levels available with message security.
+Mode
+Description
+None
+Disables message protection.
+Sign
+Signs but does not encrypt the message; should be used when data integrity is important.
+EncryptAndSign
+Signs and encrypts the message.
+
+If you are using message security, you can configure message protection to sign but not encrypt each message. This allows you to verify the integrity of a message without the overhead of encryption in case there is no sensitive data requiring protection. With transport security, you cannot modify the level of protection because it is transport-dependent and the WCF framework does not control transport standards.
+Configuring the Protection Level
+Consider turning off encryption and only signing your message when you just need to validate the integrity of the information without concerns of confidentiality. This may be useful for operations or service contracts in which you need to validate the original sender but no sensitive data is transmitted. When reducing the protection level, be careful that the message does not contain any personally identifiable information (PII). Configuring the service and the operation to only sign the message is shown in the following examples:
+Service Contract Example of ProtectionLevel.Sign
+The following is an example of using ProtectionLevel.Sign at the Service Contract level:
+
+[ServiceContract(ProtectionLevel=ProtectionLevel.Sign]
+public interface IService
+{
+ string GetData(int value);
+}
+
+
+Operation Contract Example of ProtectionLevel.Sign (for Granular Control)
+The following is an example of using ProtectionLevel.Sign at the OperationContract level:
+
+[OperationContract(ProtectionLevel=ProtectionLevel.Sign]
+string GetData(int value);
+
+Service Credentials Negotiation
+In addition to client authentication, a WCF service needs to provide its credentials to the clients in order to support mutual authentication. Service credentials should be negotiated for mutual authentication.
+By default, message security supports negotiation of service credentials for mutual authentication, where the service is requested for its security token at run time before any messages are exchanged.
+In message security, you can configure your service to not negotiate service credentials. If you configure your service to not negotiate service credentials:
+The client and service need to be in the same domain when using Windows authentication.
+The service certificate should be accessible to the client when using non-Windows authentication such as username or certificate authentication.
+Not negotiating the service credentials improves security because clients that do not have access to the service certificate cannot access the service. However, this increases the administrative overhead of distributing the service certificates to trusted clients out-of-band.
+Note:
+When using transport security, the service credentials are always negotiated and you have no control over configuration.
+Secure Session
+A secure session is a message security feature that reduces the overhead of one-off key exchange and validation. By default, secure sessions are enabled for message security. Secure sessions are more efficient if the caller makes multiple calls to the service; if the caller makes a single call, it may be more efficient to disable secure sessions.
+A secure session can be established between the client and server by creating a security context token. All subsequent message exchanges will use this token, thereby creating a secure session. By default, the lifetime for this token is 15 minutes when issued, and the token is reissued if it is required beyond 15 minutes. Therefore, when multiple messages are exchanged in a 15-minute lifespan, both the messages will be secured by using the same security context token, so security in this case will be weaker. To overcome this vulnerability, you can use derived keys, where two keys are derived from a symmetric key. You can use one of the keys to sign the Simple Object Access Protocol (SOAP) message and the other to encrypt various parts of the SOAP message.
+Authentication
+The WCF authentication options available to you depend on the transfer security mode you use. Your choice of binding will also play a role in the authentication options because not all transport or message user credentials are supported in every binding.
+Transport Security Mode Authentication Options
+The follow authentication options are available when using transport security mode:
+None. When using this option, the WCF service does not authenticate the callers. This is not the recommended option from a security perspective–avoid using this option wherever possible.
+Basic. This option is available with the HTTP protocol only. The client is authenticated using the username and password against Active Directory. The client credentials are transported using the Base64 encode string, which is literally like a clear string and therefore is not the most secure option. The service is authenticated by the SSL certificate used for secure communication.
+NTLM. This option is available with the HTTP protocol only. The client is authenticated using a challenge-response scheme against Windows accounts. The NTLM option is well suited for a workgroup environment. NTLM authentication is more secure than either Digest or Basic authentication. The service is authenticated using the Windows credentials of the process identity or using an SSL certificate if you are using the HTTP protocol.
+Windows. The Windows option tells the WCF service to use Kerberos when in a domain, or NTLM when deployed in a workgroup environment. This option uses a Windows token presented by the caller to authenticate against Active Directory. This is the most secure option compared to Basic, Digest, or NTLM authentication. The service is authenticated using the Windows credentials of the process identity or an SSL certificate if you are using the HTTP protocol.
+Certificate. When using this option, the caller presents an X.509 client certificate that the WCF service either validates with peer trust or trusts based on the issuer of the certificate. This option should be used when Windows authentication is not possible, as in the case of business-to-business (B2B) scenarios. The service is authenticated with the service certificate or by using an SSL certificate if you are using the HTTP protocol.
+Message Security Mode Authentication Options
+The follow authentication options are available when using message security mode:
+None. When using this option, the WCF service does not authenticate the callers. This is not the recommended option from a security perspective–avoid using this option wherever possible.
+Windows. When using this option, the WCF service uses Kerberos when in a domain, or NTLM when deployed in a workgroup environment. This option uses the Windows token presented by the caller in order to authenticate against the Active Directory. The service is authenticated using the Windows credentials of the process identity.
+Username. When using this option, the caller provides the username and password to the service. The service can authenticate against Windows, use membership providers such as SqlMembershipProvider, or use a custom validator to validate against the custom store. You should choose this option only when Windows authentication is not possible. The service is authenticated with a service certificate.
+Certificate. When using this option, the caller presents an X.509 client certificate; the WCF service then looks up the certificate information on the host side and either validates it (peer trust) or trusts the issuer (chain trust) of the client certificate. This option should be used when Windows authentication is not possible, or in B2B scenarios. Service is authenticated with a service certificate.
+Issue token. When using this option, the client and service depend on a secure token service (STS) to issue tokens that the client and service trusts. Microsoft Windows CardSpace™ is a typical example of an STS.
+Authorization in WCF
+WCF supports the following three basic authorization approaches:
+Role-based. Access to WCF operations is secured based on the role membership of the caller. The role store can be Windows groups, ASP.NET roles, or a custom role store.
+Identity-based. WCF supports an Identity Model feature, which is an extension to role-based authorization. Identity Model enables you to manage claims and policies to authorize clients. With this approach, you can verify claims contained within the authenticated users’ credentials.
+Resource-based. Individual resources are secured using Windows access control lists (ACLs). The WCF service impersonates the caller prior to accessing resources, which allows the operating system to perform standard access checks. All resource access is performed using the original caller’s security context.
+Role-based Authorization
+WCF provides the following options for role-based authorization:
+Windows groups. If your WCF services and clients are deployed in the same Windows domain, you can use Windows groups for authorization.
+ASP.NET roles. Use ASP.NET roles if you have fine-grained roles requirements, or if the users cannot be mapped to Windows domain accounts. This option uses the Role Manager feature and provides three different role providers based on the role store:
+SqlRoleProvider. If your role information is stored in a Microsoft SQL Server® database, consider using the SqlRoleProvider for role-based authorization.
+WindowsTokenRoleProvider. If your roles are Window groups, and you want to leverage the Role Manager feature as a consistent way to check the role membership of your users, regardless of the underlying data store, consider using the WindowsTokenRoleProvider for role-based authorization.
+AuthorizationStoreRoleProvider. If your role information is stored using the AzMan policy store in an XML file, in Active Directory, or in Active Directory Application Mode (ADAM), consider using the AuthorizationStoreRoleProvider for role-based authorization.
+Custom Roles. If your role information is stored in a custom store such as a SQL Server database, create a custom authorization policy to authorize your users.
+Note:
+It is recommended that you implement a custom role provider, using the Role Manager feature, for your custom role store rather than using the custom roles option.
+Impersonation / Delegation
+Impersonation is a technique that WCF services use to assume the original caller’s identity in order to authorize access to service resources (such as files or database tables). Service resources can be resources that are local to the service machine, or they can be resources that are remote to the service machine. Impersonation is used to access resources on the same machine as the service, while delegation is used to access resources that are remote to the service.
+Delegation allows you to use an impersonation token to access network resources. Your ability to use delegation depends on the authentication mechanism in use and appropriate account configuration.
+Controlling Impersonation on the Service Side
+You can control impersonation on the service side by using declarative impersonation. You can use the ImpersonationOption enumeration along with the OperationBehaviorAttribute attribute to control impersonation. The following impersonation options are available:
+NotAllowed. Impersonation is not performed in a particular operation.
+Allowed. Impersonation is performed if the original Windows token is available and the service is configured to impersonate on all operations using ImpersonateCallerForAllOperations in ServiceAuthorizationBehavior.
+Required. Impersonation is performed; the Windows identity token is required to be available.
+Controlling Impersonation on the Client Side
+You can control impersonation on the client side and prevent WCF services from using client identities to access local resources. Windows credentials have an AllowedImpersonationLevel property that is set to one of the following TokenImpersonationLevel options in order to control the impersonation level:
+None. The WCF service cannot authenticate or impersonate the user.
+Anonymous. The WCF service authenticates clients as anonymous, but cannot obtain information for identification or impersonation.
+Identification. The WCF service can authenticate clients and get information for identification, but cannot impersonate the clients. This is the default value.
+Impersonation. The WCF service can authenticate, get information for identification, and impersonate clients on local systems.
+Delegation. The WCF service can authenticate, get information for identification, and impersonate clients on local as well as remote systems.
+Auditing
+WCF Auditing allows you to audit security events such as authentication and authorization failures. WCF service auditing can allow you to detect an attack that has occurred or is in progress. In addition, auditing can help you debug security-related problems.
+Auditing can be enabled via configuration by using the ServiceSecurityAuditBehavior element. The event log location for auditing the events can be specified in the auditLogLocation attribute.
+WCF allows you to log the events that succeed or fail or both for auditing purposes. WCF provides auditing of these events both at the message authentication level and the service authorization level by using messageAuthenticationAuditLevel and serviceAuthorizationAuditLevel attributes, respectively. You can also suppress the failures that occur during auditing by setting the suppressAuditFailure property to true, which prevents an exception from being thrown if auditing fails (for instance, if the log files fill up).
+WCF Message Logging allows you to log malformed SOAP messages or to trace incoming messages. Message Logging allows you to specify different logging levels that you can use to diagnose and analyze your applications in case of any problems. It also allows you to log the message at the Service level or the Transport level.
